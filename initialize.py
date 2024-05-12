@@ -1,4 +1,8 @@
 import psycopg2
+from models.employee import Employee
+from models.employment_history import EmploymentHistory
+from models.task import Task
+from models.project import Project
 from config import host, user, password, db_name, port
 
 try:
@@ -11,6 +15,26 @@ try:
     )
 
     with connection.cursor() as cursor:
+        cursor.execute('''
+                            CREATE OR REPLACE FUNCTION update_created_at()
+                            RETURNS TRIGGER AS $$
+                            BEGIN
+                                NEW.created_at = CURRENT_TIMESTAMP;
+                                RETURN NEW;
+                            END;
+                            $$ LANGUAGE plpgsql;
+                        ''')
+
+        cursor.execute('''
+                            CREATE OR REPLACE FUNCTION update_updated_at()
+                            RETURNS TRIGGER AS $$
+                            BEGIN
+                                NEW.updated_at = CURRENT_TIMESTAMP;
+                                RETURN NEW;
+                            END;
+                            $$ LANGUAGE plpgsql;
+                        ''')
+
         # Создаем таблицу employees
         cursor.execute(
             '''
@@ -18,10 +42,25 @@ try:
                 id SERIAL PRIMARY KEY,
                 full_name VARCHAR(100),
                 position VARCHAR(100),
-                department VARCHAR(100)
+                department VARCHAR(100),
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP
             )
             '''
         )
+
+        cursor.execute('''
+                    CREATE TRIGGER update_created_at_trigger
+                    BEFORE INSERT ON employees
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_created_at();
+                ''')
+        cursor.execute('''
+                    CREATE TRIGGER update_updated_at_trigger
+                    BEFORE UPDATE ON employees
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_updated_at();
+                ''')
 
         # Создаем таблицу employment_history
         cursor.execute(
@@ -32,10 +71,25 @@ try:
                 start_date DATE,
                 end_date DATE,
                 salary NUMERIC(10, 2),
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
                 CONSTRAINT fk_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
             )
             '''
         )
+
+        cursor.execute('''
+                    CREATE TRIGGER update_created_at_employment_history_trigger
+                    BEFORE INSERT ON employment_history
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_created_at();
+                ''')
+        cursor.execute('''
+                    CREATE TRIGGER update_updated_at_employment_history_trigger
+                    BEFORE UPDATE ON employment_history
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_updated_at();
+                ''')
 
         # Создаем таблицу tasks
         cursor.execute(
@@ -45,10 +99,25 @@ try:
                 name VARCHAR(100),
                 description TEXT,
                 time TIME,
-                priority NUMERIC(10, 2)
+                priority NUMERIC(10, 2),
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP
             )
             '''
         )
+
+        cursor.execute('''
+                    CREATE TRIGGER update_created_at_tasks_trigger
+                    BEFORE INSERT ON tasks
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_created_at();
+                ''')
+        cursor.execute('''
+                    CREATE TRIGGER update_updated_at_tasks_trigger
+                    BEFORE UPDATE ON tasks
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_updated_at();
+                ''')
 
         # Создаем таблицу projects
         cursor.execute(
@@ -59,11 +128,83 @@ try:
                 task_id INTEGER REFERENCES tasks(id),
                 start_date DATE,
                 end_date DATE,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
                 CONSTRAINT fk_employee_project FOREIGN KEY (employee_id) REFERENCES employees(id),
                 CONSTRAINT fk_task_project FOREIGN KEY (task_id) REFERENCES tasks(id)
             )
             '''
         )
+
+        cursor.execute('''
+                    CREATE TRIGGER update_created_at_projects_trigger
+                    BEFORE INSERT ON projects
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_created_at();
+                ''')
+        cursor.execute('''
+                    CREATE TRIGGER update_updated_at_projects_trigger
+                    BEFORE UPDATE ON projects
+                    FOR EACH ROW
+                    EXECUTE FUNCTION update_updated_at();
+                ''')
+
+        Employee.add_procedure(cursor)
+        EmploymentHistory.add_procedure(cursor)
+        Task.add_procedure(cursor)
+        Project.add_procedure(cursor)
+
+        cursor.execute('''
+            CREATE OR REPLACE PROCEDURE process_employee_for_internship(employee_name VARCHAR(100), department VARCHAR(100))
+            LANGUAGE plpgsql
+            AS $$
+            DECLARE
+                employee_id INT;
+                history_id INT;
+            BEGIN
+                -- Начало транзакции
+                BEGIN
+                    -- Операция добавления нового сотрудника
+                    CALL add_employee(employee_name, 'Intern', department) INTO employee_id;
+
+                    -- Операция добавления записи в историю занятости
+                    CALL add_employment_history(employee_id, CURRENT_DATE, CURRENT_DATE + INTERVAL '3 month', 25000);
+
+                    -- Если операции выполнены успешно, фиксируем транзакцию
+                    COMMIT;
+                EXCEPTION
+                    -- Если возникла ошибка, откатываем транзакцию
+                    WHEN OTHERS THEN
+                        ROLLBACK;
+                        RAISE;
+                END;
+            END;
+            $$;
+        ''')
+
+        cursor.execute('''
+                    CREATE OR REPLACE FUNCTION double_value(x INTEGER) RETURNS INTEGER AS $$
+                    DECLARE
+                        result INTEGER;
+                    BEGIN
+                        result := x * 2;
+                        RETURN result;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                ''')
+
+        cursor.execute('''
+                    CREATE OR REPLACE FUNCTION double_values(values INTEGER[]) RETURNS SETOF INTEGER AS $$
+                    DECLARE
+                        i INTEGER;
+                    BEGIN
+                        FOR i IN array_lower(values, 1)..array_upper(values, 1) LOOP
+                            RETURN NEXT values[i] * 2;
+                        END LOOP;
+                        RETURN;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                ''')
 
         cursor.execute('SELECT * FROM employees')
 

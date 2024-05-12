@@ -225,3 +225,9 @@ class Request:
         '''
 
         return self.execute_query(projects_with_ending_in_current_year)
+
+    def get_table_data(self, table_name):
+        query = 'SELECT * FROM {}'.format(table_name)
+        rows = self.execute_query(query)
+        for row in rows:
+            print(row)

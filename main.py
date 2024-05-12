@@ -21,4 +21,6 @@ request = Request()
 # print(request.projects_with_ending_in_current_year())
 
 # print(request.employee_avg_salary())
-print(request.project_with_overdailing_tasks())
+# print(request.project_with_overdailing_tasks())
+
+request.get_table_data('projects')
