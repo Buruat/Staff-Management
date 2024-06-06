@@ -5,21 +5,21 @@ class AddEmployeeWindow(tk.Toplevel):
     def __init__(self, parent, request):
         super().__init__(parent)
         self.request = request
-        self.title("Add Employee")
+        self.title("Добавить сотрудника")
 
-        tk.Label(self, text="Full Name:").grid(row=0, column=0, sticky='e')
+        tk.Label(self, text="Полное имя:").grid(row=0, column=0, sticky='e')
         self.full_name_entry = tk.Entry(self)
         self.full_name_entry.grid(row=0, column=1, pady=5, padx=5)
 
-        tk.Label(self, text="Position:").grid(row=1, column=0, sticky='e')
+        tk.Label(self, text="Должность:").grid(row=1, column=0, sticky='e')
         self.position_entry = tk.Entry(self)
         self.position_entry.grid(row=1, column=1, pady=5, padx=5)
 
-        tk.Label(self, text="Department:").grid(row=2, column=0, sticky='e')
+        tk.Label(self, text="Департамент:").grid(row=2, column=0, sticky='e')
         self.department_entry = tk.Entry(self)
         self.department_entry.grid(row=2, column=1, pady=5, padx=5)
 
-        tk.Button(self, text="Add Employee", command=self.add_employee).grid(row=3, column=1, pady=5)
+        tk.Button(self, text="Добавить", command=self.add_employee).grid(row=3, column=1, pady=5)
 
     def add_employee(self):
         full_name = self.full_name_entry.get()
@@ -29,6 +29,6 @@ class AddEmployeeWindow(tk.Toplevel):
             self.request.cursor.execute(
                 "CALL add_employee(%s, %s, %s)", (full_name, position, department))
             self.request.connection.commit()
-            messagebox.showinfo("Success", "Employee added successfully:" + full_name + ', ' + position + ', ' + department)
+            messagebox.showinfo("Успех", "Сотрудник был успешно добавлен:" + full_name + ', ' + position + ', ' + department)
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Ошибка", str(e))

@@ -35,7 +35,7 @@ try:
                             $$ LANGUAGE plpgsql;
                         ''')
 
-        # Создаем таблицу employees
+
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS employees (
@@ -62,7 +62,6 @@ try:
                     EXECUTE FUNCTION update_updated_at();
                 ''')
 
-        # Создаем таблицу employment_history
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS employment_history (
@@ -91,7 +90,7 @@ try:
                     EXECUTE FUNCTION update_updated_at();
                 ''')
 
-        # Создаем таблицу tasks
+
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS tasks (
@@ -119,7 +118,7 @@ try:
                     EXECUTE FUNCTION update_updated_at();
                 ''')
 
-        # Создаем таблицу projects
+
         cursor.execute(
             '''
             CREATE TABLE IF NOT EXISTS projects (
@@ -158,7 +157,6 @@ try:
         cursor.execute('CREATE INDEX idx_employment_history_employee_id ON employment_history USING hash (start_date);')
         cursor.execute('CREATE INDEX idx_tasks_description_spgist ON tasks USING spgist (description);')
 
-        # Обновление данных в таблице tasks с использованием курсора
         cursor.execute('''
                     CREATE OR REPLACE PROCEDURE update_task_priorities()
                     LANGUAGE plpgsql
@@ -289,7 +287,30 @@ try:
                         GRANT read_only_role TO read_only_user;
                         GRANT write_role TO write_user;
                     ''')
-            # Заполняем таблицу employees
+
+            for i in range(1, 100000):
+                cursor.execute(
+                    '''
+                    INSERT INTO employees (full_name, position, department)
+                    VALUES ('Sample', 'Manager', 'HR')
+                    '''
+                )
+                cursor.execute(
+                    '''
+                    INSERT INTO employment_history (employee_id, start_date, end_date, salary) 
+                    VALUES 
+                    (1, '2022-01-02', '2022-12-31', 50000)
+                    '''
+                )
+                cursor.execute(
+                    '''
+                    INSERT INTO tasks (name, description, time, priority) 
+                    VALUES 
+                    ('Task 1', 'Description 2', '10:00:00', 1)
+                    '''
+                )
+
+
             cursor.execute(
                 '''
                 INSERT INTO employees (full_name, position, department)
@@ -300,7 +321,6 @@ try:
                 '''
             )
 
-            # Заполняем таблицу employment_history
             cursor.execute(
                 '''
                 INSERT INTO employment_history (employee_id, start_date, end_date, salary) 
@@ -311,7 +331,6 @@ try:
                 '''
             )
 
-            # Заполняем таблицу tasks
             cursor.execute(
                 '''
                 INSERT INTO tasks (name, description, time, priority) 
@@ -322,7 +341,6 @@ try:
                 '''
             )
 
-            # Заполняем таблицу projects
             cursor.execute(
                 '''
                 INSERT INTO projects (employee_id, task_id, start_date, end_date) 

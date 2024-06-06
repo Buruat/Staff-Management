@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
-from config import host, user, password, db_name, port
-from request import Request  # Adjust the import according to your file structure
+
+from request import Request
 from window.employee.add_employee_window import AddEmployeeWindow
 from window.employee.update_employee_window import UpdateEmployeeWindow
 from window.employee.delete_employee_window import DeleteEmployeeWindow
@@ -11,6 +10,12 @@ from window.employee_history.update_employee_history_window import UpdateEmploym
 from window.employee_history.delete_employee_history_window import DeleteEmploymentHistoryWindow
 
 from window.task.add_task_window import AddTaskWindow
+from window.task.delete_task_window import DeleteTaskWindow
+from window.task.update_task_window import UpdateTaskWindow
+
+from window.project.add_project_window import AddProjectWindow
+from window.project.delete_project_window import DeleteProjectWindow
+from window.project.update_project_window import UpdateProjectWindow
 
 class App:
     def __init__(self, root):
@@ -27,40 +32,42 @@ class App:
         button_frame = tk.Frame(self.root)
         button_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-        # Create buttons for each query
-        tk.Button(self.root, text="Composite Query with Case", command=self.display_composite_query).pack(pady=5,
-                                                                                                          anchor='e')
-        tk.Button(self.root, text="Multi Table View", command=self.display_multi_table_view).pack(pady=5, anchor='e')
-        tk.Button(self.root, text="Materialized View", command=self.display_materialized_view).pack(pady=5, anchor='e')
-        tk.Button(self.root, text="Project with Overdailing Tasks",
-                  command=self.display_project_with_overdailing_tasks).pack(pady=5, anchor='e')
-        tk.Button(self.root, text="Employee Average Salary", command=self.display_employee_avg_salary).pack(pady=5,
+        tk.Button(self.root, text="Общая ЗП по департаментам", command=self.display_materialized_view).pack(pady=5, anchor='e')
+
+        tk.Button(self.root, text="Средняя зарплата сотрудников", command=self.display_employee_avg_salary).pack(pady=5,
                                                                                                             anchor='e')
-        tk.Button(self.root, text="Employee Max Salary", command=self.display_employee_max_salary).pack(pady=5,
+        tk.Button(self.root, text="Максимальная зарплата сотрудников", command=self.display_employee_max_salary).pack(pady=5,
                                                                                                         anchor='e')
-        tk.Button(self.root, text="Employee Projects Count", command=self.display_employee_projects_count).pack(pady=5,
+        tk.Button(self.root, text="Количество проектов у сотрудников", command=self.display_employee_projects_count).pack(pady=5,
                                                                                                                 anchor='e')
-        tk.Button(self.root, text="Employee Avg Duration", command=self.display_employee_avg_duration).pack(pady=5,
+        tk.Button(self.root, text="Средняя длительность работы сотрудников", command=self.display_employee_avg_duration).pack(pady=5,
                                                                                                             anchor='e')
-        tk.Button(self.root, text="Avg Department Salary", command=self.display_avg_department_salary).pack(pady=5,
+        tk.Button(self.root, text="Средняя зарплата по отделам", command=self.display_avg_department_salary).pack(pady=5,
                                                                                                             anchor='e')
-        tk.Button(self.root, text="Projects with Highest Task Priority",
-                  command=self.display_projects_with_highest_task_priority).pack(pady=5, anchor='e')
-        tk.Button(self.root, text="Projects Ending in Current Year",
-                  command=self.display_projects_with_ending_in_current_year).pack(pady=5, anchor='e')
 
-        # Buttons to open new windows for employee management
-        tk.Button(button_frame, text="Add Employee", command=self.open_add_employee_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Update Employee", command=self.open_update_employee_window).pack(pady=5,anchor='w')
-        tk.Button(button_frame, text="Delete Employee", command=self.open_delete_employee_window).pack(pady=5,anchor='w')
+        tk.Button(button_frame, text="Добавить сотрудника", command=self.open_add_employee_window).pack(pady=5,
+                                                                                                        anchor='w')
+        tk.Button(button_frame, text="Обновить данные о сотруднике", command=self.open_update_employee_window).pack(
+            pady=5, anchor='w')
+        tk.Button(button_frame, text="Удалить сотрудника", command=self.open_delete_employee_window).pack(pady=5,
+                                                                                                          anchor='w')
 
-        tk.Button(button_frame, text="Add Employment History", command=self.open_add_employment_history_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Update Employment History", command=self.open_update_employment_history_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Delete Employment History", command=self.open_delete_employment_history_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Добавить историю занятости",
+                  command=self.open_add_employment_history_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Обновить историю занятости",
+                  command=self.open_update_employment_history_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Удалить историю занятости",
+                  command=self.open_delete_employment_history_window).pack(pady=5, anchor='w')
 
-        tk.Button(button_frame, text="Add Task", command=self.open_add_task_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Добавить задачу", command=self.open_add_task_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Обновить задачу", command=self.open_update_task_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Удалить задачу", command=self.open_delete_task_window).pack(pady=5, anchor='w')
 
-        # Create a text widget to display query results
+        tk.Button(button_frame, text="Добавить проект", command=self.open_add_project_window).pack(pady=5, anchor='w')
+        tk.Button(button_frame, text="Обновить проект", command=self.open_update_project_window).pack(pady=5,
+                                                                                                      anchor='w')
+        tk.Button(button_frame, text="Удалить проект", command=self.open_delete_project_window).pack(pady=5, anchor='w')
+
         self.result_text = tk.Text(self.root, wrap=tk.WORD, width=100, height=20)
         self.result_text.pack(pady=20, padx=10, side=tk.LEFT, fill=tk.BOTH, expand=True)
 
@@ -126,6 +133,21 @@ class App:
 
     def open_add_task_window(self):
         AddTaskWindow(self.root, self.request)
+
+    def open_delete_task_window(self):
+        DeleteTaskWindow(self.root, self.request)
+
+    def open_update_task_window(self):
+        UpdateTaskWindow(self.root, self.request)
+
+    def open_add_project_window(self):
+        AddProjectWindow(self.root, self.request)
+
+    def open_delete_project_window(self):
+        DeleteProjectWindow(self.root, self.request)
+
+    def open_update_project_window(self):
+        UpdateProjectWindow(self.root, self.request)
 
 if __name__ == "__main__":
     root = tk.Tk()

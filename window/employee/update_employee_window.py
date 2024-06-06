@@ -6,28 +6,27 @@ class UpdateEmployeeWindow(tk.Toplevel):
     def __init__(self, parent, request):
         super().__init__(parent)
         self.request = request
-        self.title("Update Employee")
+        self.title("Обновить сотрудника")
 
-        tk.Label(self, text="Search Full Name:").grid(row=0, column=0, sticky='e')
+        tk.Label(self, text="Полное имя:").grid(row=0, column=0, sticky='e')
 
-        # Создание выпадающего списка с именами сотрудников для поиска
         self.search_full_name_combobox = ttk.Combobox(self, state="readonly")
         self.search_full_name_combobox.grid(row=0, column=1, pady=5, padx=5)
         self.fill_employee_names()
 
-        tk.Label(self, text="New Full Name:").grid(row=1, column=0, sticky='e')
+        tk.Label(self, text="Новое полное имя:").grid(row=1, column=0, sticky='e')
         self.new_full_name_entry = tk.Entry(self)
         self.new_full_name_entry.grid(row=1, column=1, pady=5, padx=5)
 
-        tk.Label(self, text="New Position:").grid(row=2, column=0, sticky='e')
+        tk.Label(self, text="Новая должность:").grid(row=2, column=0, sticky='e')
         self.new_position_entry = tk.Entry(self)
         self.new_position_entry.grid(row=2, column=1, pady=5, padx=5)
 
-        tk.Label(self, text="New Department:").grid(row=3, column=0, sticky='e')
+        tk.Label(self, text="Новый департамент:").grid(row=3, column=0, sticky='e')
         self.new_department_entry = tk.Entry(self)
         self.new_department_entry.grid(row=3, column=1, pady=5, padx=5)
 
-        tk.Button(self, text="Update Employee", command=self.update_employee).grid(row=4, column=1, pady=5)
+        tk.Button(self, text="Обновить сотрудника", command=self.update_employee).grid(row=4, column=1, pady=5)
 
     def fill_employee_names(self):
         try:
@@ -35,7 +34,7 @@ class UpdateEmployeeWindow(tk.Toplevel):
             employee_names = [row[0] for row in self.request.cursor.fetchall()]
             self.search_full_name_combobox["values"] = employee_names
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Ошибка", str(e))
 
     def update_employee(self):
         search_full_name = self.search_full_name_combobox.get()
@@ -43,7 +42,6 @@ class UpdateEmployeeWindow(tk.Toplevel):
         new_position = self.new_position_entry.get().strip()
         new_department = self.new_department_entry.get().strip()
 
-        # Проверяем новые значения на пустоту и оставляем текущие значения, если они пустые
         if not new_full_name:
             new_full_name = search_full_name
         if not new_position:
@@ -63,8 +61,8 @@ class UpdateEmployeeWindow(tk.Toplevel):
             updated_employee = self.request.cursor.fetchone()
 
             # Форматируем данные для вывода
-            updated_employee_data = f"ID: {updated_employee[0]}\nFull Name: {updated_employee[1]}\nPosition: {updated_employee[2]}\nDepartment: {updated_employee[3]}\nCreated At: {updated_employee[4]}\nUpdated At: {updated_employee[5]}"
+            updated_employee_data = f"ID: {updated_employee[0]}\nПолное имя: {updated_employee[1]}\nДолжность: {updated_employee[2]}\nДепартамент: {updated_employee[3]}\nСоздан: {updated_employee[4]}\nОбновлен: {updated_employee[5]}"
 
-            messagebox.showinfo("Success", f"Employee updated successfully.\nUpdated data:\n{updated_employee_data}")
+            messagebox.showinfo("Успех", f"Сотрудник был успешно обновлен.\nНовые данные:\n{updated_employee_data}")
         except Exception as e:
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Ошибка", str(e))
