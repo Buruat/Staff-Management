@@ -67,7 +67,7 @@ try:
             '''
             CREATE TABLE IF NOT EXISTS employment_history (
                 id SERIAL PRIMARY KEY,
-                employee_id INTEGER REFERENCES employees(id),
+                employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,
                 start_date DATE,
                 end_date DATE,
                 salary NUMERIC(10, 2),
@@ -124,8 +124,8 @@ try:
             '''
             CREATE TABLE IF NOT EXISTS projects (
                 id SERIAL PRIMARY KEY,
-                employee_id INTEGER REFERENCES employees(id),
-                task_id INTEGER REFERENCES tasks(id),
+                employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,
+                task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
                 start_date DATE,
                 end_date DATE,
                 created_at TIMESTAMP,
@@ -154,61 +154,141 @@ try:
         Task.add_procedure(cursor)
         Project.add_procedure(cursor)
 
+        cursor.execute('CREATE INDEX idx_employees_full_name ON employees USING btree (full_name);')
+        cursor.execute('CREATE INDEX idx_employment_history_employee_id ON employment_history USING hash (start_date);')
+        cursor.execute('CREATE INDEX idx_tasks_description_spgist ON tasks USING spgist (description);')
+
+        # Обновление данных в таблице tasks с использованием курсора
         cursor.execute('''
-            CREATE OR REPLACE PROCEDURE process_employee_for_internship(employee_name VARCHAR(100), department VARCHAR(100))
-            LANGUAGE plpgsql
-            AS $$
-            DECLARE
-                employee_id INT;
-                history_id INT;
-            BEGIN
-                -- Начало транзакции
-                BEGIN
-                    -- Операция добавления нового сотрудника
-                    CALL add_employee(employee_name, 'Intern', department) INTO employee_id;
-
-                    -- Операция добавления записи в историю занятости
-                    CALL add_employment_history(employee_id, CURRENT_DATE, CURRENT_DATE + INTERVAL '3 month', 25000);
-
-                    -- Если операции выполнены успешно, фиксируем транзакцию
-                    COMMIT;
-                EXCEPTION
-                    -- Если возникла ошибка, откатываем транзакцию
-                    WHEN OTHERS THEN
-                        ROLLBACK;
-                        RAISE;
-                END;
-            END;
-            $$;
-        ''')
-
-        cursor.execute('''
-                    CREATE OR REPLACE FUNCTION double_value(x INTEGER) RETURNS INTEGER AS $$
+                    CREATE OR REPLACE PROCEDURE update_task_priorities()
+                    LANGUAGE plpgsql
+                    AS $$
                     DECLARE
-                        result INTEGER;
+                        task_record RECORD;
+                        new_priority NUMERIC(10, 2);
+                        task_cursor CURSOR FOR SELECT id, time FROM tasks;
                     BEGIN
-                        result := x * 2;
-                        RETURN result;
-                    END;
-                    $$ LANGUAGE plpgsql;
-                ''')
+                        OPEN task_cursor;
+                        LOOP
+                            FETCH task_cursor INTO task_record;
+                            EXIT WHEN NOT FOUND;
 
-        cursor.execute('''
-                    CREATE OR REPLACE FUNCTION double_values(values INTEGER[]) RETURNS SETOF INTEGER AS $$
-                    DECLARE
-                        i INTEGER;
-                    BEGIN
-                        FOR i IN array_lower(values, 1)..array_upper(values, 1) LOOP
-                            RETURN NEXT values[i] * 2;
+                            -- Пример вычисления нового значения priority
+                            IF task_record.time < '12:00:00' THEN
+                                new_priority := 1;
+                            ELSE
+                                new_priority := 2;
+                            END IF;
+
+                            -- Обновление записи
+                            UPDATE tasks
+                            SET priority = new_priority
+                            WHERE id = task_record.id;
                         END LOOP;
-                        RETURN;
+                        CLOSE task_cursor;
+                    END;
+                    $$;
+                ''')
+
+
+        cursor.execute('''
+                    CREATE OR REPLACE FUNCTION calculate_total_salary(employee_id INTEGER) RETURNS NUMERIC AS $$
+                    DECLARE
+                        total_salary NUMERIC := 0;
+                    BEGIN
+                        SELECT SUM(salary) INTO total_salary FROM employment_history WHERE employee_id = employee_id;
+                        RETURN total_salary;
                     END;
                     $$ LANGUAGE plpgsql;
                 ''')
+
+        cursor.execute('''
+                    CREATE OR REPLACE FUNCTION get_employee_projects(employee_id INTEGER) 
+                    RETURNS TABLE (project_id INTEGER, task_id INTEGER, start_date DATE, end_date DATE) AS $$
+                    BEGIN
+                        RETURN QUERY SELECT id, task_id, start_date, end_date FROM projects WHERE employee_id = employee_id;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                ''')
+
+        cursor.execute('''
+                    CREATE OR REPLACE FUNCTION transactional_procedure()
+                    RETURNS VOID AS $$
+                    BEGIN
+                        SELECT * FROM employees;
+
+                        INSERT INTO employment_history (employee_id, start_date, end_date, salary) 
+                        VALUES (1, '2024-01-01', '2024-12-31', 80000);
+
+                        DELETE FROM projects 
+                        WHERE id = 1;
+
+                        COMMIT;
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            RAISE NOTICE 'An error occurred: %', SQLERRM;
+                            ROLLBACK;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                ''')
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS employee_performance (
+                id SERIAL PRIMARY KEY,
+                employee_id INTEGER REFERENCES employees(id) ON DELETE CASCADE,
+                task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+                completion_date DATE,
+                completion_time TIME,
+                performance_metric NUMERIC(10, 2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
 
         cursor.execute('SELECT * FROM employees')
 
         if not cursor.fetchall():
+            cursor.execute('''
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'read_only_role') THEN
+                                CREATE ROLE read_only_role;
+                            END IF;
+                        END
+                        $$;
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'write_role') THEN
+                                CREATE ROLE write_role;
+                            END IF;
+                        END
+                        $$;
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'read_only_user') THEN
+                                CREATE USER read_only_user WITH PASSWORD 'password1';
+                            END IF;
+                        END
+                        $$;
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'write_user') THEN
+                                CREATE USER write_user WITH PASSWORD 'password2';
+                            END IF;
+                        END
+                        $$;
+                        GRANT CONNECT ON DATABASE postgres TO read_only_role, write_role;
+                        GRANT USAGE ON SCHEMA public TO read_only_role, write_role;
+                        
+                        GRANT SELECT ON ALL TABLES IN SCHEMA public TO read_only_role;
+                        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO read_only_role;
+                        
+                        GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO write_role;
+                        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO write_role;
+                        
+                        GRANT read_only_role TO read_only_user;
+                        GRANT write_role TO write_user;
+                    ''')
             # Заполняем таблицу employees
             cursor.execute(
                 '''

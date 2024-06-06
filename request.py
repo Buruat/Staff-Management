@@ -44,86 +44,107 @@ class Request:
 
     def create_multi_table_view(self):
         create_view_query = '''
-            CREATE OR REPLACE VIEW multi_table_view AS
+            CREATE OR REPLACE VIEW employee_projects_view AS
             SELECT 
+                e.id AS employee_id,
                 e.full_name,
                 e.position,
                 e.department,
                 eh.start_date AS employment_start_date,
                 eh.end_date AS employment_end_date,
                 eh.salary,
+                p.id AS project_id,
                 p.start_date AS project_start_date,
                 p.end_date AS project_end_date,
                 t.name AS task_name,
                 t.description AS task_description
-            FROM 
-                employees e
-            JOIN 
-                employment_history eh ON e.id = eh.employee_id
-            JOIN 
-                projects p ON e.id = p.employee_id
-            JOIN 
-                tasks t ON p.task_id = t.id;
+            FROM employees e
+            JOIN employment_history eh ON e.id = eh.employee_id
+            JOIN projects p ON e.id = p.employee_id
+            JOIN tasks t ON p.task_id = t.id;
         '''
         self.execute_query(create_view_query)
 
-    def create_refresh_trigger(self):
-        create_trigger_query = '''
-            CREATE OR REPLACE FUNCTION refresh_multi_table_view()
-            RETURNS TRIGGER AS
-            $$
-            BEGIN
-                REFRESH MATERIALIZED VIEW multi_table_view;
-                RETURN NULL;
-            END;
-            $$
-            LANGUAGE plpgsql;
+    def create_rules_for_multitable_view(self):
+        create_insert_rule = '''
+            CREATE OR REPLACE RULE employee_projects_view_insert AS
+            ON INSERT TO employee_projects_view DO INSTEAD (
+                INSERT INTO employees (full_name, position, department) 
+                VALUES (NEW.full_name, NEW.position, NEW.department);
 
-            CREATE TRIGGER refresh_multi_table_view_trigger
-            AFTER INSERT OR UPDATE OR DELETE
-            ON employees
-            FOR EACH STATEMENT
-            EXECUTE FUNCTION refresh_multi_table_view();
+                INSERT INTO employment_history (employee_id, start_date, end_date, salary) 
+                VALUES ((SELECT id FROM employees WHERE full_name = NEW.full_name), NEW.employment_start_date, NEW.employment_end_date, NEW.salary);
+
+                INSERT INTO tasks (name, description) 
+                VALUES (NEW.task_name, NEW.task_description);
+
+                INSERT INTO projects (employee_id, task_id, start_date, end_date) 
+                VALUES ((SELECT id FROM employees WHERE full_name = NEW.full_name), (SELECT id FROM tasks WHERE name = NEW.task_name), NEW.project_start_date, NEW.project_end_date);
+            );
         '''
-        self.execute_query(create_trigger_query)
+        self.execute_query(create_insert_rule)
+
+        create_update_rule = '''
+            CREATE OR REPLACE RULE employee_projects_view_update AS
+            ON UPDATE TO employee_projects_view DO INSTEAD (
+                UPDATE employees SET 
+                    full_name = NEW.full_name, 
+                    position = NEW.position, 
+                    department = NEW.department 
+                WHERE id = OLD.employee_id;
+
+                UPDATE employment_history SET 
+                    start_date = NEW.employment_start_date, 
+                    end_date = NEW.employment_end_date, 
+                    salary = NEW.salary 
+                WHERE employee_id = OLD.employee_id;
+
+                UPDATE tasks SET 
+                    name = NEW.task_name, 
+                    description = NEW.task_description 
+                WHERE id = (SELECT task_id FROM projects WHERE id = OLD.project_id);
+
+                UPDATE projects SET 
+                    start_date = NEW.project_start_date, 
+                    end_date = NEW.project_end_date 
+                WHERE id = OLD.project_id;
+            );
+        '''
+        self.execute_query(create_update_rule)
+
+        create_delete_rule = '''
+            CREATE OR REPLACE RULE employee_projects_view_delete AS
+            ON DELETE TO employee_projects_view DO INSTEAD (
+                DELETE FROM projects WHERE id = OLD.project_id;
+                DELETE FROM tasks WHERE id = (SELECT task_id FROM projects WHERE id = OLD.project_id);
+                DELETE FROM employment_history WHERE employee_id = OLD.employee_id;
+                DELETE FROM employees WHERE id = OLD.employee_id;
+            );
+        '''
+        self.execute_query(create_delete_rule)
 
     def setup_multi_table_view(self):
         self.create_multi_table_view()
-        self.create_refresh_trigger()
+        self.create_rules_for_multitable_view()
 
     def get_multi_table_view(self):
-        return self.execute_query('SELECT * FROM multi_table_view')
+        return self.execute_query('SELECT * FROM employee_projects_view')
 
     def materialized_view(self):
         create_materialized_view_query = '''
-            CREATE MATERIALIZED VIEW IF NOT EXISTS multi_table_materialized_view AS
-            SELECT 
-                e.full_name,
-                e.position,
-                e.department,
-                eh.start_date AS employment_start_date,
-                eh.end_date AS employment_end_date,
-                eh.salary,
-                p.start_date AS project_start_date,
-                p.end_date AS project_end_date,
-                t.name AS task_name,
-                t.description AS task_description
-            FROM 
-                employees e
-            JOIN 
-                employment_history eh ON e.id = eh.employee_id
-            JOIN 
-                projects p ON e.id = p.employee_id
-            JOIN 
-                tasks t ON p.task_id = t.id;
+            CREATE MATERIALIZED VIEW IF NOT EXISTS department_salaries AS
+            SELECT department, SUM(salary) AS total_salary
+            FROM employees e
+            JOIN employment_history eh ON e.id = eh.employee_id
+            GROUP BY department;
         '''
         self.execute_query(create_materialized_view_query)
 
-        refresh_materialized_view_query = 'REFRESH MATERIALIZED VIEW multi_table_materialized_view'
+        refresh_materialized_view_query = 'REFRESH MATERIALIZED VIEW department_salaries'
         self.execute_query(refresh_materialized_view_query)
 
     def get_materialized_view(self):
-        return self.execute_query('SELECT * FROM multi_table_materialized_view')
+        return self.execute_query('SELECT * FROM department_salaries')
 
     def project_with_overdailing_tasks(self):
         project_with_overdailing_tasks = '''
@@ -161,6 +182,7 @@ class Request:
         '''
 
         return self.execute_query(max_salary)
+
 
     def employee_projects_count(self):
         projects_count = '''

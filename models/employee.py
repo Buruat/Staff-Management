@@ -16,7 +16,6 @@ class Employee:
                 $$;
             '''
         )
-
         cursor.execute(
             '''
                 CREATE OR REPLACE PROCEDURE delete_employee(
@@ -30,7 +29,6 @@ class Employee:
                 $$;
             '''
         )
-
         cursor.execute(
             '''
                 CREATE OR REPLACE PROCEDURE update_employee(
@@ -47,3 +45,15 @@ class Employee:
                 $$;
             '''
         )
+
+    def add_employee(self, full_name, position, department):
+        query = f"CALL add_employee('{full_name}', '{position}', '{department}');"
+        self.execute_query(query)
+
+    def delete_employee(self, employee_id):
+        query = f"CALL delete_employee({employee_id});"
+        self.execute_query(query)
+
+    def update_employee(self, employee_id, new_full_name, new_position, new_department):
+        query = f"CALL update_employee({employee_id}, '{new_full_name}', '{new_position}', '{new_department}');"
+        self.execute_query(query)
