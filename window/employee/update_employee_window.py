@@ -60,7 +60,6 @@ class UpdateEmployeeWindow(tk.Toplevel):
             self.request.cursor.execute("SELECT * FROM employees WHERE full_name = %s", (new_full_name,))
             updated_employee = self.request.cursor.fetchone()
 
-            # Форматируем данные для вывода
             updated_employee_data = f"ID: {updated_employee[0]}\nПолное имя: {updated_employee[1]}\nДолжность: {updated_employee[2]}\nДепартамент: {updated_employee[3]}\nСоздан: {updated_employee[4]}\nОбновлен: {updated_employee[5]}"
 
             messagebox.showinfo("Успех", f"Сотрудник был успешно обновлен.\nНовые данные:\n{updated_employee_data}")

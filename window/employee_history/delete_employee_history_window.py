@@ -9,7 +9,6 @@ class DeleteEmploymentHistoryWindow(tk.Toplevel):
 
         tk.Label(self, text="Имя сотрудника:").grid(row=0, column=0, sticky='e')
 
-        # Создаем выпадающий список с именами сотрудников
         self.employee_name_combobox = ttk.Combobox(self, state="readonly")
         self.employee_name_combobox.grid(row=0, column=1, pady=5, padx=5)
         self.fill_employee_names()

@@ -1,32 +1,30 @@
 import tkinter as tk
+from tkinter import messagebox
 
 from request import Request
 from window.employee.add_employee_window import AddEmployeeWindow
 from window.employee.update_employee_window import UpdateEmployeeWindow
 from window.employee.delete_employee_window import DeleteEmployeeWindow
-
 from window.employee_history.add_employee_history_window import AddEmploymentHistoryWindow
 from window.employee_history.update_employee_history_window import UpdateEmploymentHistoryWindow
 from window.employee_history.delete_employee_history_window import DeleteEmploymentHistoryWindow
-
 from window.task.add_task_window import AddTaskWindow
 from window.task.delete_task_window import DeleteTaskWindow
 from window.task.update_task_window import UpdateTaskWindow
-
 from window.project.add_project_window import AddProjectWindow
 from window.project.delete_project_window import DeleteProjectWindow
 from window.project.update_project_window import UpdateProjectWindow
 
 class App:
-    def __init__(self, root):
+    def __init__(self, root, role):
         self.root = root
         self.root.title("Database Query Interface")
+        self.role = role
 
         self.request = Request()
         self.request.setup_multi_table_view()
 
         self.create_widgets()
-
 
     def create_widgets(self):
         button_frame = tk.Frame(self.root)
@@ -34,42 +32,39 @@ class App:
 
         tk.Button(self.root, text="Общая ЗП по департаментам", command=self.display_materialized_view).pack(pady=5, anchor='e')
 
-        tk.Button(self.root, text="Средняя зарплата сотрудников", command=self.display_employee_avg_salary).pack(pady=5,
-                                                                                                            anchor='e')
-        tk.Button(self.root, text="Максимальная зарплата сотрудников", command=self.display_employee_max_salary).pack(pady=5,
-                                                                                                        anchor='e')
-        tk.Button(self.root, text="Количество проектов у сотрудников", command=self.display_employee_projects_count).pack(pady=5,
-                                                                                                                anchor='e')
-        tk.Button(self.root, text="Средняя длительность работы сотрудников", command=self.display_employee_avg_duration).pack(pady=5,
-                                                                                                            anchor='e')
-        tk.Button(self.root, text="Средняя зарплата по отделам", command=self.display_avg_department_salary).pack(pady=5,
-                                                                                                            anchor='e')
+        tk.Button(self.root, text="Средняя зарплата сотрудников", command=self.display_employee_avg_salary).pack(pady=5, anchor='e')
+        tk.Button(self.root, text="Максимальная зарплата сотрудников", command=self.display_employee_max_salary).pack(pady=5, anchor='e')
+        tk.Button(self.root, text="Количество проектов у сотрудников", command=self.display_employee_projects_count).pack(pady=5, anchor='e')
+        tk.Button(self.root, text="Средняя длительность работы сотрудников", command=self.display_employee_avg_duration).pack(pady=5, anchor='e')
+        tk.Button(self.root, text="Средняя зарплата по отделам", command=self.display_avg_department_salary).pack(pady=5, anchor='e')
 
-        tk.Button(button_frame, text="Добавить сотрудника", command=self.open_add_employee_window).pack(pady=5,
-                                                                                                        anchor='w')
-        tk.Button(button_frame, text="Обновить данные о сотруднике", command=self.open_update_employee_window).pack(
-            pady=5, anchor='w')
-        tk.Button(button_frame, text="Удалить сотрудника", command=self.open_delete_employee_window).pack(pady=5,
-                                                                                                          anchor='w')
+        if self.role == "write_role":
+            tk.Button(button_frame, text="Добавить сотрудника", command=self.open_add_employee_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Обновить данные о сотруднике", command=self.open_update_employee_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Удалить сотрудника", command=self.open_delete_employee_window).pack(pady=5, anchor='w')
 
-        tk.Button(button_frame, text="Добавить историю занятости",
-                  command=self.open_add_employment_history_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Обновить историю занятости",
-                  command=self.open_update_employment_history_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Удалить историю занятости",
-                  command=self.open_delete_employment_history_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Добавить историю занятости", command=self.open_add_employment_history_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Обновить историю занятости", command=self.open_update_employment_history_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Удалить историю занятости", command=self.open_delete_employment_history_window).pack(pady=5, anchor='w')
 
-        tk.Button(button_frame, text="Добавить задачу", command=self.open_add_task_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Обновить задачу", command=self.open_update_task_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Удалить задачу", command=self.open_delete_task_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Добавить задачу", command=self.open_add_task_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Обновить задачу", command=self.open_update_task_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Удалить задачу", command=self.open_delete_task_window).pack(pady=5, anchor='w')
 
-        tk.Button(button_frame, text="Добавить проект", command=self.open_add_project_window).pack(pady=5, anchor='w')
-        tk.Button(button_frame, text="Обновить проект", command=self.open_update_project_window).pack(pady=5,
-                                                                                                      anchor='w')
-        tk.Button(button_frame, text="Удалить проект", command=self.open_delete_project_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Добавить проект", command=self.open_add_project_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Обновить проект", command=self.open_update_project_window).pack(pady=5, anchor='w')
+            tk.Button(button_frame, text="Удалить проект", command=self.open_delete_project_window).pack(pady=5, anchor='w')
 
         self.result_text = tk.Text(self.root, wrap=tk.WORD, width=100, height=20)
         self.result_text.pack(pady=20, padx=10, side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    def display_results(self, results):
+        self.result_text.delete(1.0, tk.END)
+        if results:
+            for row in results:
+                self.result_text.insert(tk.END, str(row) + '\n')
+        else:
+            self.result_text.insert(tk.END, "No results found.")
 
     def display_composite_query(self):
         self.display_results(self.request.composite_query_with_case())
@@ -104,14 +99,6 @@ class App:
 
     def display_projects_with_ending_in_current_year(self):
         self.display_results(self.request.projects_with_ending_in_current_year())
-
-    def display_results(self, results):
-        self.result_text.delete(1.0, tk.END)
-        if results:
-            for row in results:
-                self.result_text.insert(tk.END, str(row) + '\n')
-        else:
-            self.result_text.insert(tk.END, "No results found.")
 
     def open_add_employee_window(self):
         AddEmployeeWindow(self.root, self.request)
@@ -149,7 +136,26 @@ class App:
     def open_update_project_window(self):
         UpdateProjectWindow(self.root, self.request)
 
+class RoleSelectionWindow:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Выбор пользователя")
+
+        tk.Label(self.root, text="Выберите роль:").pack(pady=10)
+
+        tk.Button(self.root, text="Администратор", command=lambda: self.submit_role("write_role")).pack(pady=5)
+        tk.Button(self.root, text="Обычный пользователь", command=lambda: self.submit_role("read_only_role")).pack(pady=5)
+
+    def submit_role(self, role):
+        if role in ["write_role", "read_only_role"]:
+            self.root.destroy()
+            main_root = tk.Tk()
+            app = App(main_root, role)
+            main_root.mainloop()
+        else:
+            messagebox.showwarning("Ошибка", "Выберите роль")
+
 if __name__ == "__main__":
     root = tk.Tk()
-    app = App(root)
+    role_selection_window = RoleSelectionWindow(root)
     root.mainloop()

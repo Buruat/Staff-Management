@@ -288,28 +288,6 @@ try:
                         GRANT write_role TO write_user;
                     ''')
 
-            for i in range(1, 100000):
-                cursor.execute(
-                    '''
-                    INSERT INTO employees (full_name, position, department)
-                    VALUES ('Sample', 'Manager', 'HR')
-                    '''
-                )
-                cursor.execute(
-                    '''
-                    INSERT INTO employment_history (employee_id, start_date, end_date, salary) 
-                    VALUES 
-                    (1, '2022-01-02', '2022-12-31', 50000)
-                    '''
-                )
-                cursor.execute(
-                    '''
-                    INSERT INTO tasks (name, description, time, priority) 
-                    VALUES 
-                    ('Task 1', 'Description 2', '10:00:00', 1)
-                    '''
-                )
-
 
             cursor.execute(
                 '''
