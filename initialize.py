@@ -209,26 +209,6 @@ try:
                     $$ LANGUAGE plpgsql;
                 ''')
 
-        cursor.execute('''
-                    CREATE OR REPLACE FUNCTION transactional_procedure()
-                    RETURNS VOID AS $$
-                    BEGIN
-                        SELECT * FROM employees;
-
-                        INSERT INTO employment_history (employee_id, start_date, end_date, salary) 
-                        VALUES (1, '2024-01-01', '2024-12-31', 80000);
-
-                        DELETE FROM projects 
-                        WHERE id = 1;
-
-                        COMMIT;
-                    EXCEPTION
-                        WHEN OTHERS THEN
-                            RAISE NOTICE 'An error occurred: %', SQLERRM;
-                            ROLLBACK;
-                    END;
-                    $$ LANGUAGE plpgsql;
-                ''')
 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS employee_performance (
@@ -242,6 +222,69 @@ try:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         ''')
+
+        cursor.execute('''
+                    CREATE OR REPLACE PROCEDURE manage_salary_transactions(employee_id INTEGER)
+                    LANGUAGE plpgsql
+                    AS $$
+                    DECLARE
+                        total_salary_after NUMERIC;
+                    BEGIN
+                        DELETE FROM employees WHERE id = employee_id;
+                    
+                        SELECT SUM(salary) INTO total_salary_after FROM employment_history;
+                    
+                        IF total_salary_after < 100000 THEN
+                            RAISE EXCEPTION 'Total salary after deletion is less than 10000: %', total_salary_after;
+                        END IF;
+                    
+                        RAISE NOTICE 'Transaction committed. Total salary after deletion: %', total_salary_after;
+                    EXCEPTION
+                        WHEN OTHERS THEN
+                            RAISE NOTICE 'An error occurred: %', SQLERRM;
+                            RAISE;
+                    END;
+                    $$;
+                ''')
+
+
+        cursor.execute('''
+                            CREATE OR REPLACE FUNCTION enforce_minimum_salary()
+                            RETURNS TRIGGER AS $$
+                            BEGIN
+                                IF NEW.salary < 1000 THEN
+                                    NEW.salary = 1000;
+                                END IF;
+                                RETURN NEW;
+                            END;
+                            $$ LANGUAGE plpgsql;
+                        ''')
+
+        cursor.execute('''
+                            CREATE TRIGGER enforce_minimum_salary_trigger
+                            BEFORE INSERT OR UPDATE ON employment_history
+                            FOR EACH ROW
+                            EXECUTE FUNCTION enforce_minimum_salary();
+                        ''')
+
+        cursor.execute('''
+                    CREATE OR REPLACE FUNCTION set_priority_to_one()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        IF NEW.priority = 0 THEN
+                            NEW.priority = 1;
+                        END IF;
+                        RETURN NEW;
+                    END;
+                    $$ LANGUAGE plpgsql;
+                ''')
+
+        cursor.execute('''
+                    CREATE TRIGGER set_priority_to_one_trigger
+                    BEFORE INSERT OR UPDATE ON tasks
+                    FOR EACH ROW
+                    EXECUTE FUNCTION set_priority_to_one();
+                ''')
 
         cursor.execute('SELECT * FROM employees')
 
